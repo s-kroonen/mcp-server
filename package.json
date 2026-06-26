@@ -7,14 +7,19 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
+    "start:stdio": "node dist/stdio.js",
     "dev": "tsx watch src/index.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
     "nodemailer": "^6.9.16",
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
     "@types/node": "^22.0.0",
     "@types/nodemailer": "^6.4.17",
     "tsx": "^4.19.2",

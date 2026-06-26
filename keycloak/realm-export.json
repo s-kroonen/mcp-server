@@ -1,0 +1,44 @@
+{
+  "realm": "storm",
+  "enabled": true,
+  "displayName": "Storm MCP",
+  "accessTokenLifespan": 3600,
+  "ssoSessionMaxLifespan": 86400,
+  "clients": [
+    {
+      "clientId": "storm-mcp-server",
+      "name": "Storm MCP Server (introspection)",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "50e5bf68644d6866a46c4d216219c6ed",
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect"
+    }
+  ],
+  "clientScopes": [
+    {
+      "name": "mcp:tools",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "true"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "REPLACE_WITH_SERVER_URL",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "defaultDefaultClientScopes": ["mcp:tools"],
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false
+}
