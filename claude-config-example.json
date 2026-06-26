@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "storm-mcp": {
+      "type": "http",
+      "url": "http://JOUW_SERVER_IP:3000/mcp",
+      "headers": {
+        "x-api-key": "JOUW_MCP_API_KEY"
+      }
+    }
+  }
+}
