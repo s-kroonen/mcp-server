@@ -18,7 +18,10 @@ const SERVER_URL = process.env.SERVER_URL || `http://localhost:${PORT}`;
 const DISABLE_AUTH = process.env.DISABLE_AUTH === "true";
 
 // Keycloak auth server config
-const AUTH_BASE = process.env.KEYCLOAK_URL ?? "http://keycloak:8080";
+// KEYCLOAK_URL    — internal Docker URL used for token introspection (container-to-container)
+// KEYCLOAK_PUBLIC_URL — public HTTPS URL used in OAuth metadata advertised to clients
+const AUTH_INTERNAL = process.env.KEYCLOAK_URL ?? "http://keycloak:8080";
+const AUTH_PUBLIC = process.env.KEYCLOAK_PUBLIC_URL ?? AUTH_INTERNAL;
 const AUTH_REALM = process.env.KEYCLOAK_REALM ?? "storm";
 const OAUTH_CLIENT_ID = process.env.OAUTH_CLIENT_ID!;
 const OAUTH_CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET!;
@@ -28,14 +31,16 @@ if (!DISABLE_AUTH && (!OAUTH_CLIENT_ID || !OAUTH_CLIENT_SECRET)) {
   process.exit(1);
 }
 
-const realmBase = `${AUTH_BASE}/realms/${AUTH_REALM}/`;
+const realmPublic = `${AUTH_PUBLIC}/realms/${AUTH_REALM}/`;
+const realmInternal = `${AUTH_INTERNAL}/realms/${AUTH_REALM}/`;
 
 const oauthMetadata: OAuthMetadata = {
-  issuer: realmBase,
-  authorization_endpoint: `${realmBase}protocol/openid-connect/auth`,
-  token_endpoint: `${realmBase}protocol/openid-connect/token`,
-  registration_endpoint: `${realmBase}clients-registrations/openid-connect`,
-  introspection_endpoint: `${realmBase}protocol/openid-connect/token/introspect`,
+  issuer: realmPublic,
+  authorization_endpoint: `${realmPublic}protocol/openid-connect/auth`,
+  token_endpoint: `${realmPublic}protocol/openid-connect/token`,
+  registration_endpoint: `${realmPublic}clients-registrations/openid-connect`,
+  // introspection uses internal URL — not exposed to clients, avoids HTTPS requirement inside Docker
+  introspection_endpoint: `${realmInternal}protocol/openid-connect/token/introspect`,
   response_types_supported: ["code"],
 };
 
@@ -102,7 +107,7 @@ if (DISABLE_AUTH) {
   app.get("/.well-known/oauth-protected-resource", (_req, res) => {
     res.json({
       resource: mcpServerUrl.href,
-      authorization_servers: [realmBase],
+      authorization_servers: [realmPublic],
     });
   });
 } else {
