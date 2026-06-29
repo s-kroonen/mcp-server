@@ -15,6 +15,7 @@ import { registerEmailTools } from "./tools/email.js";
 
 const PORT = Number(process.env.PORT || 3000);
 const SERVER_URL = process.env.SERVER_URL || `http://localhost:${PORT}`;
+const DISABLE_AUTH = process.env.DISABLE_AUTH === "true";
 
 // Keycloak auth server config
 const AUTH_BASE = process.env.KEYCLOAK_URL ?? "http://keycloak:8080";
@@ -22,8 +23,8 @@ const AUTH_REALM = process.env.KEYCLOAK_REALM ?? "storm";
 const OAUTH_CLIENT_ID = process.env.OAUTH_CLIENT_ID!;
 const OAUTH_CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET!;
 
-if (!OAUTH_CLIENT_ID || !OAUTH_CLIENT_SECRET) {
-  console.error("OAUTH_CLIENT_ID and OAUTH_CLIENT_SECRET must be set.");
+if (!DISABLE_AUTH && (!OAUTH_CLIENT_ID || !OAUTH_CLIENT_SECRET)) {
+  console.error("OAUTH_CLIENT_ID and OAUTH_CLIENT_SECRET must be set (or set DISABLE_AUTH=true for local dev).");
   process.exit(1);
 }
 
@@ -95,21 +96,34 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", server: "storm-mcp" });
 });
 
-// OAuth Protected Resource Metadata — unauthenticated, required by MCP spec
-app.use(
-  mcpAuthMetadataRouter({
-    oauthMetadata,
-    resourceServerUrl: mcpServerUrl,
-    scopesSupported: ["mcp:tools"],
-    resourceName: "Storm MCP Server",
-  })
-);
+if (DISABLE_AUTH) {
+  console.warn("[dev] Auth disabled — all /mcp requests accepted without a token");
+  // Provide a minimal OAuth metadata stub so clients can discover endpoints
+  app.get("/.well-known/oauth-protected-resource", (_req, res) => {
+    res.json({
+      resource: mcpServerUrl.href,
+      authorization_servers: [realmBase],
+    });
+  });
+} else {
+  // OAuth Protected Resource Metadata — unauthenticated, required by MCP spec
+  app.use(
+    mcpAuthMetadataRouter({
+      oauthMetadata,
+      resourceServerUrl: mcpServerUrl,
+      scopesSupported: ["mcp:tools"],
+      resourceName: "Storm MCP Server",
+    })
+  );
+}
 
-const authMiddleware = requireBearerAuth({
-  verifier: tokenVerifier,
-  requiredScopes: ["mcp:tools"],
-  resourceMetadataUrl: getOAuthProtectedResourceMetadataUrl(mcpServerUrl),
-});
+const authMiddleware: express.RequestHandler = DISABLE_AUTH
+  ? (_req, _res, next) => next()
+  : requireBearerAuth({
+      verifier: tokenVerifier,
+      requiredScopes: ["mcp:tools"],
+      resourceMetadataUrl: getOAuthProtectedResourceMetadataUrl(mcpServerUrl),
+    });
 
 // MCP endpoint
 app.post("/mcp", authMiddleware, async (req, res) => {
