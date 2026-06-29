@@ -13,8 +13,8 @@ import type { OAuthMetadata } from "@modelcontextprotocol/sdk/shared/auth.js";
 import { checkResourceAllowed } from "@modelcontextprotocol/sdk/shared/auth-utils.js";
 import { registerEmailTools } from "./tools/email.js";
 
-const PORT = Number(process.env.PORT ?? 3000);
-const SERVER_URL = process.env.SERVER_URL ?? `http://localhost:${PORT}`;
+const PORT = Number(process.env.PORT || 3000);
+const SERVER_URL = process.env.SERVER_URL || `http://localhost:${PORT}`;
 
 // Keycloak auth server config
 const AUTH_BASE = process.env.KEYCLOAK_URL ?? "http://keycloak:8080";
